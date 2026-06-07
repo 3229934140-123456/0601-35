@@ -4,6 +4,7 @@ const path = require("path");
 let mainWindow = null;
 let tray = null;
 let isQuiting = false;
+let projectList = [];
 function createWindow() {
   mainWindow = new electron.BrowserWindow({
     width: 900,
@@ -36,11 +37,19 @@ function createWindow() {
     mainWindow == null ? void 0 : mainWindow.show();
   });
 }
-function createTray() {
-  const iconPath = path.join(__dirname, "../public/tray-icon.png");
-  const trayIcon = electron.nativeImage.createFromPath(iconPath);
-  tray = new electron.Tray(trayIcon.resize({ width: 16, height: 16 }));
-  tray.setToolTip("CI Tray Tool - 持续集成监控");
+function updateTrayMenu() {
+  if (!tray) return;
+  const quickBuildItems = projectList.slice(0, 5).map((project) => ({
+    label: `${project.name} - ${project.defaultBranch}`,
+    click: () => {
+      mainWindow == null ? void 0 : mainWindow.show();
+      mainWindow == null ? void 0 : mainWindow.focus();
+      mainWindow == null ? void 0 : mainWindow.webContents.send("quick-build", {
+        projectId: project.id,
+        branch: project.defaultBranch
+      });
+    }
+  }));
   const contextMenu = electron.Menu.buildFromTemplate([
     {
       label: "打开面板",
@@ -52,16 +61,14 @@ function createTray() {
     { type: "separator" },
     {
       label: "快速构建",
-      submenu: [
-        { label: "项目 A - main 分支" },
-        { label: "项目 B - develop 分支" }
-      ]
+      submenu: quickBuildItems.length > 0 ? quickBuildItems : [{ label: "暂无项目", enabled: false }]
     },
     { type: "separator" },
     {
       label: "通知设置",
       click: () => {
         mainWindow == null ? void 0 : mainWindow.show();
+        mainWindow == null ? void 0 : mainWindow.focus();
         mainWindow == null ? void 0 : mainWindow.webContents.send("navigate", "settings");
       }
     },
@@ -75,6 +82,13 @@ function createTray() {
     }
   ]);
   tray.setContextMenu(contextMenu);
+}
+function createTray() {
+  const iconPath = path.join(__dirname, "../public/tray-icon.svg");
+  const trayIcon = electron.nativeImage.createFromPath(iconPath);
+  tray = new electron.Tray(trayIcon.resize({ width: 16, height: 16 }));
+  tray.setToolTip("CI Tray Tool - 持续集成监控");
+  updateTrayMenu();
   tray.on("click", () => {
     if (mainWindow == null ? void 0 : mainWindow.isVisible()) {
       mainWindow.hide();
@@ -125,4 +139,11 @@ electron.ipcMain.on("open-external", (_event, url) => {
 electron.ipcMain.on("copy-to-clipboard", (_event, text) => {
   const { clipboard } = require("electron");
   clipboard.writeText(text);
+});
+electron.ipcMain.on("update-tray-projects", (_event, projects) => {
+  projectList = projects;
+  updateTrayMenu();
+});
+electron.ipcMain.on("download-file", (_event, url, filename) => {
+  electron.shell.openExternal(url);
 });

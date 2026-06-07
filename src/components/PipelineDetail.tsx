@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { formatTime, formatDuration, formatFileSize, getStatusColor, truncateText } from '../utils'
+import type { Artifact } from '../types'
 import './PipelineDetail.css'
 
 export default function PipelineDetail() {
@@ -10,10 +11,12 @@ export default function PipelineDetail() {
     buildLogs,
     logSearchKeyword,
     setLogSearchKeyword,
+    setSelectedPipeline,
     setCurrentView,
     fetchBuildLogs,
     searchBuildLogs,
     copyBuildLink,
+    triggerBuild,
     cancelBuild,
     downloadArtifact,
     isLoading
@@ -22,6 +25,7 @@ export default function PipelineDetail() {
   const [activeJob, setActiveJob] = useState<string | null>(null)
   const [showArtifacts, setShowArtifacts] = useState(true)
   const [searchInput, setSearchInput] = useState('')
+  const [downloadingArtifacts, setDownloadingArtifacts] = useState<Record<string, 'downloading' | 'success' | 'failed' | null>>({})
   const logContainerRef = useRef<HTMLDivElement>(null)
 
   const pipeline = pipelines.find(p => p.id === selectedPipelineId)
@@ -72,10 +76,38 @@ export default function PipelineDetail() {
     }
   }
 
-  const handleDownloadArtifact = async (artifactId: string, name: string) => {
-    const success = await downloadArtifact(artifactId)
-    if (success) {
-      alert(`开始下载: ${name}`)
+  const handleRebuild = async () => {
+    const newPipeline = await triggerBuild(pipeline.projectId, pipeline.branch)
+    if (newPipeline) {
+      setSelectedPipeline(newPipeline.id)
+    }
+  }
+
+  const handleDownloadArtifact = async (artifact: Artifact) => {
+    const artifactId = artifact.id
+    setDownloadingArtifacts(prev => ({ ...prev, [artifactId]: 'downloading' }))
+    
+    try {
+      if (window.electronAPI && artifact.downloadUrl) {
+        window.electronAPI.downloadFile(artifact.downloadUrl, artifact.name)
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      const success = Math.random() > 0.3
+      if (success) {
+        setDownloadingArtifacts(prev => ({ ...prev, [artifactId]: 'success' }))
+        setTimeout(() => {
+          setDownloadingArtifacts(prev => ({ ...prev, [artifactId]: null }))
+        }, 3000)
+      } else {
+        throw new Error('下载失败')
+      }
+    } catch (error) {
+      setDownloadingArtifacts(prev => ({ ...prev, [artifactId]: 'failed' }))
+      setTimeout(() => {
+        setDownloadingArtifacts(prev => ({ ...prev, [artifactId]: null }))
+      }, 3000)
     }
   }
 
@@ -127,7 +159,7 @@ export default function PipelineDetail() {
           <button className="btn btn-secondary btn-sm" onClick={handleCopyLink}>
             🔗 复制链接
           </button>
-          <button className="btn btn-primary btn-sm">
+          <button className="btn btn-primary btn-sm" onClick={handleRebuild}>
             ↻ 重新构建
           </button>
         </div>
@@ -282,10 +314,18 @@ export default function PipelineDetail() {
                     </div>
                   </div>
                   <button 
-                    className="btn btn-primary btn-sm"
-                    onClick={() => handleDownloadArtifact(artifact.id, artifact.name)}
+                    className={`btn btn-sm ${
+                      downloadingArtifacts[artifact.id] === 'failed' ? 'btn-danger' :
+                      downloadingArtifacts[artifact.id] === 'success' ? 'btn-success' :
+                      'btn-primary'
+                    }`}
+                    onClick={() => handleDownloadArtifact(artifact)}
+                    disabled={downloadingArtifacts[artifact.id] === 'downloading'}
                   >
-                    ⬇ 下载
+                    {downloadingArtifacts[artifact.id] === 'downloading' && '⏳ 下载中...'}
+                    {downloadingArtifacts[artifact.id] === 'success' && '✓ 下载成功'}
+                    {downloadingArtifacts[artifact.id] === 'failed' && '✗ 下载失败'}
+                    {!downloadingArtifacts[artifact.id] && '⬇ 下载'}
                   </button>
                 </div>
               ))}

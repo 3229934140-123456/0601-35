@@ -9,8 +9,7 @@ export default function NotificationsPage() {
     fetchNotifications, 
     markNotificationRead,
     markAllNotificationsRead,
-    setCurrentView,
-    setSelectedPipeline
+    openPipelineDetail
   } = useAppStore()
 
   useEffect(() => {
@@ -42,9 +41,8 @@ export default function NotificationsPage() {
     if (!notif.read) {
       markNotificationRead(notif.id)
     }
-    if (notif.pipelineId) {
-      setSelectedPipeline(notif.pipelineId)
-      setCurrentView('pipeline-detail')
+    if (notif.pipelineId && notif.projectId) {
+      openPipelineDetail(notif.pipelineId, notif.projectId)
     }
   }
 

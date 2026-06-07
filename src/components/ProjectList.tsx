@@ -15,6 +15,7 @@ export default function ProjectList() {
     setSelectedBranch,
     toggleFavorite,
     triggerBuild,
+    addProject,
     isLoading,
     settings
   } = useAppStore()
@@ -22,6 +23,14 @@ export default function ProjectList() {
   const [showBranchFilter, setShowBranchFilter] = useState(false)
   const [triggerModalOpen, setTriggerModalOpen] = useState(false)
   const [triggerBranch, setTriggerBranch] = useState('')
+  const [addModalOpen, setAddModalOpen] = useState(false)
+  const [newProject, setNewProject] = useState({
+    name: '',
+    repoUrl: '',
+    ciPlatform: 'gitlab' as 'gitlab' | 'github' | 'jenkins' | 'coding',
+    defaultBranch: 'main',
+    description: ''
+  })
 
   const selectedProject = projects.find(p => p.id === selectedProjectId)
   
@@ -51,12 +60,34 @@ export default function ProjectList() {
     }
   }
 
+  const handleAddProject = () => {
+    if (newProject.name.trim() && newProject.repoUrl.trim() && newProject.defaultBranch.trim()) {
+      addProject({
+        name: newProject.name.trim(),
+        repoUrl: newProject.repoUrl.trim(),
+        ciPlatform: newProject.ciPlatform,
+        defaultBranch: newProject.defaultBranch.trim(),
+        description: newProject.description.trim()
+      })
+      setAddModalOpen(false)
+      setNewProject({
+        name: '',
+        repoUrl: '',
+        ciPlatform: 'gitlab',
+        defaultBranch: 'main',
+        description: ''
+      })
+    }
+  }
+
+  const canAddProject = newProject.name.trim() && newProject.repoUrl.trim() && newProject.defaultBranch.trim()
+
   return (
     <div className="project-list-page">
       <div className="projects-sidebar">
         <div className="projects-header">
           <h3 className="projects-title">项目列表</h3>
-          <button className="btn btn-ghost btn-sm" title="添加项目">
+          <button className="btn btn-ghost btn-sm" title="添加项目" onClick={() => setAddModalOpen(true)}>
             ＋
           </button>
         </div>
@@ -210,6 +241,84 @@ export default function ProjectList() {
               <button className="btn btn-secondary" onClick={() => setTriggerModalOpen(false)}>取消</button>
               <button className="btn btn-primary" onClick={handleTriggerBuild} disabled={!triggerBranch}>
                 触发构建
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {addModalOpen && (
+        <div className="modal-overlay" onClick={() => setAddModalOpen(false)}>
+          <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>绑定新项目</h3>
+              <button className="modal-close" onClick={() => setAddModalOpen(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>项目名称 <span className="required">*</span></label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="请输入项目名称"
+                  value={newProject.name}
+                  onChange={e => setNewProject({ ...newProject, name: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label>仓库地址 <span className="required">*</span></label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="https://gitlab.example.com/team/project"
+                  value={newProject.repoUrl}
+                  onChange={e => setNewProject({ ...newProject, repoUrl: e.target.value })}
+                />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>CI 平台 <span className="required">*</span></label>
+                  <select 
+                    className="select"
+                    value={newProject.ciPlatform}
+                    onChange={e => setNewProject({ ...newProject, ciPlatform: e.target.value as any })}
+                  >
+                    <option value="gitlab">🦊 GitLab</option>
+                    <option value="github">🐙 GitHub</option>
+                    <option value="jenkins">👷 Jenkins</option>
+                    <option value="coding">💻 Coding</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>默认分支 <span className="required">*</span></label>
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="main"
+                    value={newProject.defaultBranch}
+                    onChange={e => setNewProject({ ...newProject, defaultBranch: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>项目描述</label>
+                <textarea
+                  className="input"
+                  rows={3}
+                  placeholder="项目描述（可选）"
+                  value={newProject.description}
+                  onChange={e => setNewProject({ ...newProject, description: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setAddModalOpen(false)}>取消</button>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleAddProject} 
+                disabled={!canAddProject}
+              >
+                绑定项目
               </button>
             </div>
           </div>

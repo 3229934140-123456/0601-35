@@ -24,6 +24,7 @@ interface AppState {
   setSelectedProject: (projectId: string) => void
   setSelectedBranch: (branch: string) => void
   setSelectedPipeline: (pipelineId: string | null) => void
+  openPipelineDetail: (pipelineId: string, projectId: string) => void
   setCurrentView: (view: AppState['currentView']) => void
   setLogSearchKeyword: (keyword: string) => void
 
@@ -31,6 +32,7 @@ interface AppState {
   fetchLatestPipelines: () => Promise<void>
   fetchPipelines: (projectId: string, branch?: string) => Promise<void>
   fetchPipelineDetail: (pipelineId: string) => Promise<void>
+  addProject: (project: Omit<Project, 'id' | 'isFavorite' | 'branches'> & { branches?: string[] }) => void
   triggerBuild: (projectId: string, branch: string) => Promise<Pipeline | null>
   cancelBuild: (pipelineId: string) => Promise<boolean>
   fetchApprovals: () => Promise<void>
@@ -112,12 +114,29 @@ export const useAppStore = create<AppState>()(
         }
       },
 
+      openPipelineDetail: async (pipelineId, projectId) => {
+        set({ selectedProjectId: projectId, selectedBranch: 'all' })
+        await get().fetchPipelines(projectId)
+        set({ selectedPipelineId: pipelineId, currentView: 'pipeline-detail' })
+        await get().fetchPipelineDetail(pipelineId)
+        await get().fetchBuildLogs(pipelineId)
+      },
+
       setCurrentView: (view) => set({ currentView: view }),
       setLogSearchKeyword: (keyword) => set({ logSearchKeyword: keyword }),
 
       fetchProjects: async () => {
         set({ isLoading: true, error: null })
         try {
+          const { projects: existingProjects } = get()
+          if (existingProjects.length > 0) {
+            set({ isLoading: false })
+            if (!get().selectedProjectId && existingProjects.length > 0) {
+              get().setSelectedProject(existingProjects[0].id)
+            }
+            get().fetchLatestPipelines()
+            return
+          }
           const projects = await ciApi.getProjects()
           set({ projects, isLoading: false })
           if (!get().selectedProjectId && projects.length > 0) {
@@ -126,6 +145,25 @@ export const useAppStore = create<AppState>()(
           get().fetchLatestPipelines()
         } catch (error) {
           set({ error: '加载项目失败', isLoading: false })
+        }
+      },
+
+      addProject: (projectData) => {
+        const { projects } = get()
+        const newProject: Project = {
+          id: `proj-${Date.now()}`,
+          name: projectData.name,
+          description: projectData.description || '',
+          repoUrl: projectData.repoUrl,
+          ciPlatform: projectData.ciPlatform,
+          defaultBranch: projectData.defaultBranch,
+          branches: projectData.branches || [projectData.defaultBranch],
+          isFavorite: false
+        }
+        const updatedProjects = [...projects, newProject]
+        set({ projects: updatedProjects })
+        if (updatedProjects.length === 1) {
+          get().setSelectedProject(newProject.id)
         }
       },
 
@@ -198,14 +236,20 @@ export const useAppStore = create<AppState>()(
         try {
           const result = await ciApi.cancelPipeline(pipelineId)
           if (result) {
-            const { pipelines } = get()
+            const { pipelines, triggerRecords } = get()
             const updatedPipelines = pipelines.map(p => {
               if (p.id === pipelineId) {
                 return { ...p, status: 'canceled' as const }
               }
               return p
             })
-            set({ pipelines: updatedPipelines })
+            const updatedTriggerRecords = triggerRecords.map(r => {
+              if (r.pipelineId === pipelineId) {
+                return { ...r, status: 'canceled' as const }
+              }
+              return r
+            })
+            set({ pipelines: updatedPipelines, triggerRecords: updatedTriggerRecords })
           }
           return result
         } catch (error) {
@@ -336,12 +380,12 @@ export const useAppStore = create<AppState>()(
 
       toggleFavorite: async (projectId) => {
         try {
-          await ciApi.toggleFavorite(projectId)
           const { projects } = get()
           const updated = projects.map(p => 
             p.id === projectId ? { ...p, isFavorite: !p.isFavorite } : p
           )
           set({ projects: updated })
+          await ciApi.toggleFavorite(projectId)
         } catch (error) {
           set({ error: '操作失败' })
         }
@@ -393,6 +437,7 @@ export const useAppStore = create<AppState>()(
     {
       name: 'ci-tray-tool-storage',
       partialize: (state) => ({
+        projects: state.projects,
         settings: state.settings,
         accounts: state.accounts,
         triggerRecords: state.triggerRecords

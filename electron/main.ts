@@ -4,6 +4,7 @@ import path from 'path'
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let isQuiting = false
+let projectList: Array<{ id: string; name: string; defaultBranch: string }> = []
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -41,12 +42,20 @@ function createWindow() {
   })
 }
 
-function createTray() {
-  const iconPath = path.join(__dirname, '../public/tray-icon.png')
-  const trayIcon = nativeImage.createFromPath(iconPath)
-  
-  tray = new Tray(trayIcon.resize({ width: 16, height: 16 }))
-  tray.setToolTip('CI Tray Tool - 持续集成监控')
+function updateTrayMenu() {
+  if (!tray) return
+
+  const quickBuildItems = projectList.slice(0, 5).map(project => ({
+    label: `${project.name} - ${project.defaultBranch}`,
+    click: () => {
+      mainWindow?.show()
+      mainWindow?.focus()
+      mainWindow?.webContents.send('quick-build', {
+        projectId: project.id,
+        branch: project.defaultBranch
+      })
+    }
+  }))
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -56,23 +65,21 @@ function createTray() {
         mainWindow?.focus()
       }
     },
-    { type: 'separator' },
+    { type: 'separator' as const },
     {
       label: '快速构建',
-      submenu: [
-        { label: '项目 A - main 分支' },
-        { label: '项目 B - develop 分支' }
-      ]
+      submenu: quickBuildItems.length > 0 ? quickBuildItems : [{ label: '暂无项目', enabled: false }]
     },
-    { type: 'separator' },
+    { type: 'separator' as const },
     {
       label: '通知设置',
       click: () => {
         mainWindow?.show()
+        mainWindow?.focus()
         mainWindow?.webContents.send('navigate', 'settings')
       }
     },
-    { type: 'separator' },
+    { type: 'separator' as const },
     {
       label: '退出',
       click: () => {
@@ -83,6 +90,16 @@ function createTray() {
   ])
 
   tray.setContextMenu(contextMenu)
+}
+
+function createTray() {
+  const iconPath = path.join(__dirname, '../public/tray-icon.svg')
+  const trayIcon = nativeImage.createFromPath(iconPath)
+  
+  tray = new Tray(trayIcon.resize({ width: 16, height: 16 }))
+  tray.setToolTip('CI Tray Tool - 持续集成监控')
+
+  updateTrayMenu()
 
   tray.on('click', () => {
     if (mainWindow?.isVisible()) {
@@ -143,4 +160,13 @@ ipcMain.on('open-external', (_event, url) => {
 ipcMain.on('copy-to-clipboard', (_event, text) => {
   const { clipboard } = require('electron')
   clipboard.writeText(text)
+})
+
+ipcMain.on('update-tray-projects', (_event, projects) => {
+  projectList = projects
+  updateTrayMenu()
+})
+
+ipcMain.on('download-file', (_event, url, filename) => {
+  shell.openExternal(url)
 })
