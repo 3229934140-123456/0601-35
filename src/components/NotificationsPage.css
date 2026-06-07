@@ -1,0 +1,115 @@
+.notifications-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.unread-label {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--error-color);
+  background: var(--error-bg);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-left: 10px;
+}
+
+.notifications-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notification-item {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.notification-item:hover {
+  border-color: var(--accent-color);
+}
+
+.notification-item.unread {
+  border-left: 3px solid var(--accent-color);
+}
+
+.notification-item.read {
+  opacity: 0.7;
+}
+
+.notification-item.notification-success {
+  background: linear-gradient(to right, var(--success-bg), var(--bg-tertiary));
+}
+
+.notification-item.notification-failed {
+  background: linear-gradient(to right, var(--error-bg), var(--bg-tertiary));
+}
+
+.notification-item.notification-warning {
+  background: linear-gradient(to right, var(--warning-bg), var(--bg-tertiary));
+}
+
+.notification-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  width: 32px;
+  text-align: center;
+}
+
+.notification-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.notification-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent-color);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.notification-message {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.notification-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.notification-project {
+  font-weight: 500;
+}
+
+.notification-time {
+  font-size: 11px;
+}
