@@ -67,15 +67,30 @@ export default function PipelineDetail() {
   const currentProject = projects.find(p => p.id === pipeline.projectId)
 
   const filteredLogs = useMemo(() => {
-    if (!activeStage) return buildLogs
-    return buildLogs.filter(log => log.stage === activeStage)
-  }, [buildLogs, activeStage])
+    let logs = buildLogs
+    if (activeStage) {
+      logs = logs.filter(log => log.stage === activeStage)
+    }
+    if (activeJob) {
+      logs = logs.filter(log => log.job === activeJob)
+    }
+    return logs
+  }, [buildLogs, activeStage, activeJob])
 
   const activeStageName = useMemo(() => {
     if (!activeStage) return ''
     const stage = pipeline.stages.find(s => s.slug === activeStage)
     return stage?.name || activeStage
   }, [activeStage, pipeline.stages])
+
+  const activeJobName = useMemo(() => {
+    if (!activeJob) return ''
+    for (const stage of pipeline.stages) {
+      const job = stage.jobs.find(j => j.slug === activeJob)
+      if (job) return job.name
+    }
+    return activeJob
+  }, [activeJob, pipeline.stages])
 
   const matchedIndices = useMemo(() => {
     if (!logSearchKeyword) return []
@@ -87,7 +102,7 @@ export default function PipelineDetail() {
 
   useEffect(() => {
     setCurrentMatchIndex(0)
-  }, [logSearchKeyword, activeStage])
+  }, [logSearchKeyword, activeStage, activeJob])
 
   useEffect(() => {
     if (matchedIndices.length > 0 && currentMatchIndex >= 0 && logLineRefs.current[matchedIndices[currentMatchIndex]]) {
@@ -124,9 +139,19 @@ export default function PipelineDetail() {
   const handleStageClick = (stageSlug: string) => {
     if (activeStage === stageSlug) {
       setActiveStage(null)
+      setActiveJob(null)
     } else {
       setActiveStage(stageSlug)
       setActiveJob(null)
+    }
+  }
+
+  const handleJobClick = (jobSlug: string, stageSlug: string) => {
+    if (activeJob === jobSlug) {
+      setActiveJob(null)
+    } else {
+      setActiveStage(stageSlug)
+      setActiveJob(jobSlug)
     }
   }
 
@@ -293,13 +318,8 @@ export default function PipelineDetail() {
                   {stage.jobs.map(job => (
                     <div 
                       key={job.id}
-                      className={`job-item ${activeJob === job.id ? 'active' : ''}`}
-                      onClick={() => {
-                        setActiveJob(job.id)
-                        if (selectedPipelineId) {
-                          fetchBuildLogs(selectedPipelineId, job.id)
-                        }
-                      }}
+                      className={`job-item ${activeJob === job.slug ? 'active' : ''}`}
+                      onClick={() => handleJobClick(job.slug, stage.slug)}
                     >
                       <span className="job-dot" style={{ background: getStatusColor(job.status) }} />
                       <span className="job-name">{job.name}</span>
@@ -322,7 +342,13 @@ export default function PipelineDetail() {
             {activeStage && (
               <span className="log-filter-badge">
                 阶段: {activeStageName}
-                <button className="log-filter-clear" onClick={() => setActiveStage(null)}>✕</button>
+                <button className="log-filter-clear" onClick={() => { setActiveStage(null); setActiveJob(null); }}>✕</button>
+              </span>
+            )}
+            {activeJob && (
+              <span className="log-filter-badge badge-job">
+                任务: {activeJobName}
+                <button className="log-filter-clear" onClick={() => setActiveJob(null)}>✕</button>
               </span>
             )}
           </div>
@@ -369,7 +395,8 @@ export default function PipelineDetail() {
             </div>
           ) : filteredLogs.length === 0 ? (
             <div className="logs-empty">
-              {activeStage ? '该阶段暂无日志' : '暂无日志'}
+              {activeJob ? `任务「${activeJobName}」暂无日志输出` : 
+               activeStage ? `阶段「${activeStageName}」暂无日志` : '暂无日志'}
             </div>
           ) : (
             <div className="logs-content">

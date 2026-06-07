@@ -12,6 +12,7 @@ export default function ApprovalsPage() {
     triggerRecords,
     fetchTriggerRecords,
     projects,
+    openPipelineDetail,
     isLoading
   } = useAppStore()
 
@@ -191,7 +192,11 @@ export default function ApprovalsPage() {
               triggerRecords.map(record => {
                 const project = getProjectInfo(record.projectId)
                 return (
-                  <div key={record.id} className="trigger-record-item card">
+                  <div 
+                    key={record.id} 
+                    className="trigger-record-item card"
+                    onClick={() => openPipelineDetail(record.pipelineId, record.projectId)}
+                  >
                     <div className="trigger-info">
                       <span className="trigger-project">{record.projectName}</span>
                       <span className="trigger-branch">🌿 {record.branch}</span>

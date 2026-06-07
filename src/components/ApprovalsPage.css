@@ -188,6 +188,13 @@
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.trigger-record-item:hover {
+  border-color: var(--accent-light);
+  background: var(--bg-hover);
 }
 
 .trigger-info {

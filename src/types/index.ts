@@ -74,6 +74,7 @@ export interface BuildLogLine {
   timestamp?: number
   level: 'info' | 'warn' | 'error' | 'debug'
   stage: string
+  job?: string
   message: string
 }
 

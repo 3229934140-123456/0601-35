@@ -24,6 +24,32 @@
   color: var(--text-tertiary);
 }
 
+.filter-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 16px 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.filter-select {
+  min-width: 140px;
+  font-size: 13px;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -65,11 +91,13 @@
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
+  cursor: pointer;
 }
 
 .download-item:hover {
   border-color: var(--accent-light);
+  background: var(--bg-hover);
 }
 
 .download-icon {

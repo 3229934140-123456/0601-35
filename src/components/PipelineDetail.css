@@ -330,6 +330,11 @@
   font-weight: 500;
 }
 
+.log-filter-badge.badge-job {
+  background: var(--success-bg);
+  color: var(--success-color);
+}
+
 .log-filter-clear {
   background: none;
   border: none;

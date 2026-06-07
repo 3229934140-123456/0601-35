@@ -16,7 +16,7 @@ interface AppState {
   triggerRecords: LocalTriggerRecord[]
   downloadRecords: DownloadRecord[]
   settings: AppSettings
-  currentView: 'projects' | 'pipeline-detail' | 'approvals' | 'notifications' | 'settings' | 'downloads'
+  currentView: 'projects' | 'pipeline-detail' | 'approvals' | 'notifications' | 'settings' | 'downloads' | 'build-history'
   isLoading: boolean
   error: string | null
   buildLogs: BuildLogLine[]

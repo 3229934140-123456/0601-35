@@ -8,6 +8,7 @@ import ApprovalsPage from './components/ApprovalsPage'
 import NotificationsPage from './components/NotificationsPage'
 import SettingsPage from './components/SettingsPage'
 import DownloadsPage from './components/DownloadsPage'
+import BuildHistoryPage from './components/BuildHistoryPage'
 import './styles/app.css'
 
 declare global {
