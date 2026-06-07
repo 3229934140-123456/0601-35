@@ -11,6 +11,7 @@ export default function ApprovalsPage() {
     rejectApproval,
     triggerRecords,
     fetchTriggerRecords,
+    projects,
     isLoading
   } = useAppStore()
 
@@ -26,6 +27,10 @@ export default function ApprovalsPage() {
 
   const pendingApprovals = approvals.filter(a => a.status === 'pending')
   const historyApprovals = approvals.filter(a => a.status !== 'pending')
+
+  const getProjectInfo = (projectId: string) => {
+    return projects.find(p => p.id === projectId)
+  }
 
   const handleApprove = async (approvalId: string) => {
     if (confirm('确定批准此发布请求吗？')) {
@@ -183,22 +188,30 @@ export default function ApprovalsPage() {
                 <div className="empty-state-text">暂无触发记录</div>
               </div>
             ) : (
-              triggerRecords.map(record => (
-                <div key={record.id} className="trigger-record-item card">
-                  <div className="trigger-info">
-                    <span className="trigger-project">{record.projectName}</span>
-                    <span className="trigger-branch">🌿 {record.branch}</span>
-                    <span className={`trigger-status status-${record.status}`}>
-                      {record.status === 'success' && '✓ 成功'}
-                      {record.status === 'failed' && '✗ 失败'}
-                      {record.status === 'running' && '⏳ 运行中'}
-                      {record.status === 'pending' && '⏳ 排队中'}
-                      {record.status === 'canceled' && '⊘ 已取消'}
-                    </span>
+              triggerRecords.map(record => {
+                const project = getProjectInfo(record.projectId)
+                return (
+                  <div key={record.id} className="trigger-record-item card">
+                    <div className="trigger-info">
+                      <span className="trigger-project">{record.projectName}</span>
+                      <span className="trigger-branch">🌿 {record.branch}</span>
+                      {project && (
+                        <span className="trigger-platform">
+                          🏭 {project.ciPlatform.toUpperCase()}
+                        </span>
+                      )}
+                      <span className={`trigger-status status-${record.status}`}>
+                        {record.status === 'success' && '✓ 成功'}
+                        {record.status === 'failed' && '✗ 失败'}
+                        {record.status === 'running' && '⏳ 运行中'}
+                        {record.status === 'pending' && '⏳ 排队中'}
+                        {record.status === 'canceled' && '⊘ 已取消'}
+                      </span>
+                    </div>
+                    <div className="trigger-time">{formatTime(record.triggeredAt)}</div>
                   </div>
-                  <div className="trigger-time">{formatTime(record.triggeredAt)}</div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         )}

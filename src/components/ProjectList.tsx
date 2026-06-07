@@ -230,7 +230,7 @@ export default function ProjectList() {
           </div>
         </div>
 
-        {selectedProject && pipelines.length > 0 && (
+        {selectedProject && (
           <div className="pipeline-overview">
             <h3 className="section-title">构建概览</h3>
             <div className="stat-grid">

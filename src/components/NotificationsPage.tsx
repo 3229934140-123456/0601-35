@@ -9,7 +9,8 @@ export default function NotificationsPage() {
     fetchNotifications, 
     markNotificationRead,
     markAllNotificationsRead,
-    openPipelineDetail
+    openPipelineDetail,
+    projects
   } = useAppStore()
 
   useEffect(() => {
@@ -52,6 +53,10 @@ export default function NotificationsPage() {
 
   const sortedNotifications = [...notifications].sort((a, b) => b.timestamp - a.timestamp)
 
+  const getProjectInfo = (projectId: string) => {
+    return projects.find(p => p.id === projectId)
+  }
+
   return (
     <div className="notifications-page">
       <div className="page-header">
@@ -92,6 +97,13 @@ export default function NotificationsPage() {
                 <div className="notification-message">{notif.message}</div>
                 <div className="notification-meta">
                   <span className="notification-project">📁 {notif.projectName}</span>
+                  {getProjectInfo(notif.projectId) && (
+                    <>
+                      <span className="notification-platform">
+                        🏭 {getProjectInfo(notif.projectId)?.ciPlatform.toUpperCase()}
+                      </span>
+                    </>
+                  )}
                   <span className="notification-time">{formatTime(notif.timestamp)}</span>
                 </div>
               </div>

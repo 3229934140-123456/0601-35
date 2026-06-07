@@ -15,7 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateTrayProjects: (projects: Array<{ id: string; name: string; defaultBranch: string }>) =>
     ipcRenderer.send('update-tray-projects', projects),
   downloadFile: (url: string, filename?: string) =>
-    ipcRenderer.send('download-file', url, filename)
+    ipcRenderer.invoke('download-file', url, filename)
 })
 
 export type ElectronAPI = {

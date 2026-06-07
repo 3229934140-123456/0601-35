@@ -73,38 +73,41 @@ export const mockPipelines: Record<string, Pipeline[]> = {
       stages: [
         {
           id: 'stage-1',
+          slug: 'build',
           name: '构建',
           status: 'success',
           startedAt: now - 3600000,
           finishedAt: now - 3300000,
           duration: 300,
           jobs: [
-            { id: 'job-1', name: 'install-deps', status: 'success', duration: 120 },
-            { id: 'job-2', name: 'type-check', status: 'success', duration: 60 },
-            { id: 'job-3', name: 'build', status: 'success', duration: 120 }
+            { id: 'job-1', slug: 'install-deps', name: 'install-deps', status: 'success', duration: 120 },
+            { id: 'job-2', slug: 'type-check', name: 'type-check', status: 'success', duration: 60 },
+            { id: 'job-3', slug: 'build', name: 'build', status: 'success', duration: 120 }
           ]
         },
         {
           id: 'stage-2',
+          slug: 'test',
           name: '测试',
           status: 'success',
           startedAt: now - 3300000,
           finishedAt: now - 2900000,
           duration: 400,
           jobs: [
-            { id: 'job-4', name: 'unit-test', status: 'success', duration: 180 },
-            { id: 'job-5', name: 'e2e-test', status: 'success', duration: 220 }
+            { id: 'job-4', slug: 'unit-test', name: 'unit-test', status: 'success', duration: 180 },
+            { id: 'job-5', slug: 'e2e-test', name: 'e2e-test', status: 'success', duration: 220 }
           ]
         },
         {
           id: 'stage-3',
+          slug: 'deploy',
           name: '部署',
           status: 'success',
           startedAt: now - 2900000,
           finishedAt: now - 2600000,
           duration: 300,
           jobs: [
-            { id: 'job-6', name: 'deploy-staging', status: 'success', duration: 300 }
+            { id: 'job-6', slug: 'deploy-staging', name: 'deploy-staging', status: 'success', duration: 300 }
           ]
         }
       ],
@@ -134,34 +137,37 @@ export const mockPipelines: Record<string, Pipeline[]> = {
       stages: [
         {
           id: 'stage-1',
+          slug: 'build',
           name: '构建',
           status: 'success',
           startedAt: now - 900000,
           finishedAt: now - 600000,
           duration: 300,
           jobs: [
-            { id: 'job-1', name: 'install-deps', status: 'success', duration: 130 },
-            { id: 'job-2', name: 'type-check', status: 'success', duration: 70 },
-            { id: 'job-3', name: 'build', status: 'success', duration: 100 }
+            { id: 'job-1', slug: 'install-deps', name: 'install-deps', status: 'success', duration: 130 },
+            { id: 'job-2', slug: 'type-check', name: 'type-check', status: 'success', duration: 70 },
+            { id: 'job-3', slug: 'build', name: 'build', status: 'success', duration: 100 }
           ]
         },
         {
           id: 'stage-2',
+          slug: 'test',
           name: '测试',
           status: 'running',
           startedAt: now - 600000,
           duration: 0,
           jobs: [
-            { id: 'job-4', name: 'unit-test', status: 'running', duration: 0 },
-            { id: 'job-5', name: 'e2e-test', status: 'pending' }
+            { id: 'job-4', slug: 'unit-test', name: 'unit-test', status: 'running', duration: 0 },
+            { id: 'job-5', slug: 'e2e-test', name: 'e2e-test', status: 'pending' }
           ]
         },
         {
           id: 'stage-3',
+          slug: 'deploy',
           name: '部署',
           status: 'pending',
           jobs: [
-            { id: 'job-6', name: 'deploy-staging', status: 'pending' }
+            { id: 'job-6', slug: 'deploy-staging', name: 'deploy-staging', status: 'pending' }
           ]
         }
       ],
@@ -186,31 +192,34 @@ export const mockPipelines: Record<string, Pipeline[]> = {
       stages: [
         {
           id: 'stage-1',
+          slug: 'build',
           name: '构建',
           status: 'success',
           duration: 280,
           jobs: [
-            { id: 'job-1', name: 'install-deps', status: 'success', duration: 120 },
-            { id: 'job-2', name: 'type-check', status: 'success', duration: 60 },
-            { id: 'job-3', name: 'build', status: 'success', duration: 100 }
+            { id: 'job-1', slug: 'install-deps', name: 'install-deps', status: 'success', duration: 120 },
+            { id: 'job-2', slug: 'type-check', name: 'type-check', status: 'success', duration: 60 },
+            { id: 'job-3', slug: 'build', name: 'build', status: 'success', duration: 100 }
           ]
         },
         {
           id: 'stage-2',
+          slug: 'test',
           name: '测试',
           status: 'failed',
           duration: 150,
           jobs: [
-            { id: 'job-4', name: 'unit-test', status: 'failed', duration: 150 },
-            { id: 'job-5', name: 'e2e-test', status: 'skipped' }
+            { id: 'job-4', slug: 'unit-test', name: 'unit-test', status: 'failed', duration: 150 },
+            { id: 'job-5', slug: 'e2e-test', name: 'e2e-test', status: 'skipped' }
           ]
         },
         {
           id: 'stage-3',
+          slug: 'deploy',
           name: '部署',
           status: 'skipped',
           jobs: [
-            { id: 'job-6', name: 'deploy-staging', status: 'skipped' }
+            { id: 'job-6', slug: 'deploy-staging', name: 'deploy-staging', status: 'skipped' }
           ]
         }
       ],
@@ -236,26 +245,29 @@ export const mockPipelines: Record<string, Pipeline[]> = {
       stages: [
         {
           id: 'stage-1',
+          slug: 'build-prod',
           name: '构建生产包',
           status: 'pending',
           jobs: [
-            { id: 'job-1', name: 'prod-build', status: 'pending' }
+            { id: 'job-1', slug: 'prod-build', name: 'prod-build', status: 'pending' }
           ]
         },
         {
           id: 'stage-2',
+          slug: 'approval',
           name: '审批',
           status: 'pending',
           jobs: [
-            { id: 'job-2', name: 'release-approval', status: 'pending' }
+            { id: 'job-2', slug: 'release-approval', name: 'release-approval', status: 'pending' }
           ]
         },
         {
           id: 'stage-3',
+          slug: 'deploy-prod',
           name: '生产部署',
           status: 'pending',
           jobs: [
-            { id: 'job-3', name: 'deploy-prod', status: 'pending' }
+            { id: 'job-3', slug: 'deploy-prod', name: 'deploy-prod', status: 'pending' }
           ]
         }
       ],
@@ -281,20 +293,20 @@ export const mockPipelines: Record<string, Pipeline[]> = {
       },
       stages: [
         {
-          id: 'stage-1', name: '编译', status: 'success', duration: 200,
-          jobs: [{ id: 'j1', name: 'compile', status: 'success', duration: 200 }]
+          id: 'stage-1', slug: 'compile', name: '编译', status: 'success', duration: 200,
+          jobs: [{ id: 'j1', slug: 'compile', name: 'compile', status: 'success', duration: 200 }]
         },
         {
-          id: 'stage-2', name: '单元测试', status: 'success', duration: 350,
-          jobs: [{ id: 'j2', name: 'unit-tests', status: 'success', duration: 350 }]
+          id: 'stage-2', slug: 'unit-test', name: '单元测试', status: 'success', duration: 350,
+          jobs: [{ id: 'j2', slug: 'unit-tests', name: 'unit-tests', status: 'success', duration: 350 }]
         },
         {
-          id: 'stage-3', name: '集成测试', status: 'success', duration: 420,
-          jobs: [{ id: 'j3', name: 'integration-tests', status: 'success', duration: 420 }]
+          id: 'stage-3', slug: 'integration-test', name: '集成测试', status: 'success', duration: 420,
+          jobs: [{ id: 'j3', slug: 'integration-tests', name: 'integration-tests', status: 'success', duration: 420 }]
         },
         {
-          id: 'stage-4', name: '镜像构建', status: 'success', duration: 180,
-          jobs: [{ id: 'j4', name: 'docker-build', status: 'success', duration: 180 }]
+          id: 'stage-4', slug: 'image-build', name: '镜像构建', status: 'success', duration: 180,
+          jobs: [{ id: 'j4', slug: 'docker-build', name: 'docker-build', status: 'success', duration: 180 }]
         }
       ],
       startedAt: now - 5400000,
@@ -320,10 +332,10 @@ export const mockPipelines: Record<string, Pipeline[]> = {
         timestamp: now - 1200000
       },
       stages: [
-        { id: 'stage-1', name: '编译', status: 'success', duration: 190, jobs: [{ id: 'j1', name: 'compile', status: 'success', duration: 190 }] },
-        { id: 'stage-2', name: '单元测试', status: 'running', jobs: [{ id: 'j2', name: 'unit-tests', status: 'running' }] },
-        { id: 'stage-3', name: '集成测试', status: 'pending', jobs: [{ id: 'j3', name: 'integration-tests', status: 'pending' }] },
-        { id: 'stage-4', name: '镜像构建', status: 'pending', jobs: [{ id: 'j4', name: 'docker-build', status: 'pending' }] }
+        { id: 'stage-1', slug: 'compile', name: '编译', status: 'success', duration: 190, jobs: [{ id: 'j1', slug: 'compile', name: 'compile', status: 'success', duration: 190 }] },
+        { id: 'stage-2', slug: 'unit-test', name: '单元测试', status: 'running', jobs: [{ id: 'j2', slug: 'unit-tests', name: 'unit-tests', status: 'running' }] },
+        { id: 'stage-3', slug: 'integration-test', name: '集成测试', status: 'pending', jobs: [{ id: 'j3', slug: 'integration-tests', name: 'integration-tests', status: 'pending' }] },
+        { id: 'stage-4', slug: 'image-build', name: '镜像构建', status: 'pending', jobs: [{ id: 'j4', slug: 'docker-build', name: 'docker-build', status: 'pending' }] }
       ],
       startedAt: now - 1200000,
       triggeredBy: '孙七',
@@ -345,9 +357,9 @@ export const mockPipelines: Record<string, Pipeline[]> = {
         timestamp: now - 10800000
       },
       stages: [
-        { id: 's1', name: '依赖安装', status: 'success', duration: 300, jobs: [{ id: 'j1', name: 'pod-install', status: 'success', duration: 300 }] },
-        { id: 's2', name: '编译', status: 'success', duration: 600, jobs: [{ id: 'j2', name: 'build-ios', status: 'success', duration: 400 }, { id: 'j3', name: 'build-android', status: 'success', duration: 600 }] },
-        { id: 's3', name: '测试', status: 'success', duration: 240, jobs: [{ id: 'j4', name: 'test', status: 'success', duration: 240 }] }
+        { id: 's1', slug: 'install-deps', name: '依赖安装', status: 'success', duration: 300, jobs: [{ id: 'j1', slug: 'pod-install', name: 'pod-install', status: 'success', duration: 300 }] },
+        { id: 's2', slug: 'compile', name: '编译', status: 'success', duration: 600, jobs: [{ id: 'j2', slug: 'build-ios', name: 'build-ios', status: 'success', duration: 400 }, { id: 'j3', slug: 'build-android', name: 'build-android', status: 'success', duration: 600 }] },
+        { id: 's3', slug: 'test', name: '测试', status: 'success', duration: 240, jobs: [{ id: 'j4', slug: 'test', name: 'test', status: 'success', duration: 240 }] }
       ],
       startedAt: now - 10800000,
       finishedAt: now - 9000000,
@@ -375,9 +387,9 @@ export const mockPipelines: Record<string, Pipeline[]> = {
         timestamp: now - 1800000
       },
       stages: [
-        { id: 's1', name: '数据校验', status: 'success', duration: 120, jobs: [{ id: 'j1', name: 'validate', status: 'success', duration: 120 }] },
-        { id: 's2', name: '模型训练', status: 'running', jobs: [{ id: 'j2', name: 'train-model', status: 'running' }] },
-        { id: 's3', name: '模型评估', status: 'pending', jobs: [{ id: 'j3', name: 'evaluate', status: 'pending' }] }
+        { id: 's1', slug: 'data-validate', name: '数据校验', status: 'success', duration: 120, jobs: [{ id: 'j1', slug: 'validate', name: 'validate', status: 'success', duration: 120 }] },
+        { id: 's2', slug: 'model-train', name: '模型训练', status: 'running', jobs: [{ id: 'j2', slug: 'train-model', name: 'train-model', status: 'running' }] },
+        { id: 's3', slug: 'model-evaluate', name: '模型评估', status: 'pending', jobs: [{ id: 'j3', slug: 'evaluate', name: 'evaluate', status: 'pending' }] }
       ],
       startedAt: now - 1800000,
       triggeredBy: '吴九',
@@ -399,9 +411,9 @@ export const mockPipelines: Record<string, Pipeline[]> = {
         timestamp: now - 14400000
       },
       stages: [
-        { id: 's1', name: '构建', status: 'success', duration: 250, jobs: [{ id: 'j1', name: 'build', status: 'success', duration: 250 }] },
-        { id: 's2', name: '测试', status: 'success', duration: 180, jobs: [{ id: 'j2', name: 'test', status: 'success', duration: 180 }] },
-        { id: 's3', name: '部署', status: 'success', duration: 120, jobs: [{ id: 'j3', name: 'deploy', status: 'success', duration: 120 }] }
+        { id: 's1', slug: 'build', name: '构建', status: 'success', duration: 250, jobs: [{ id: 'j1', slug: 'build', name: 'build', status: 'success', duration: 250 }] },
+        { id: 's2', slug: 'test', name: '测试', status: 'success', duration: 180, jobs: [{ id: 'j2', slug: 'test', name: 'test', status: 'success', duration: 180 }] },
+        { id: 's3', slug: 'deploy', name: '部署', status: 'success', duration: 120, jobs: [{ id: 'j3', slug: 'deploy', name: 'deploy', status: 'success', duration: 120 }] }
       ],
       startedAt: now - 14400000,
       finishedAt: now - 13000000,

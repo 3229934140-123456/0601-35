@@ -17,6 +17,7 @@ export default function Sidebar() {
     { id: 'projects', label: '项目', icon: '📁', view: 'projects' as const },
     { id: 'approvals', label: '审批', icon: '✅', badge: pendingApprovals, view: 'approvals' as const },
     { id: 'notifications', label: '通知', icon: '🔔', badge: unreadNotifs, view: 'notifications' as const },
+    { id: 'downloads', label: '下载', icon: '📥', view: 'downloads' as const },
     { id: 'settings', label: '设置', icon: '⚙️', view: 'settings' as const }
   ]
 

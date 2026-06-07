@@ -207,6 +207,11 @@
   color: var(--text-secondary);
 }
 
+.trigger-platform {
+  font-size: 12px;
+  color: var(--accent-color);
+}
+
 .trigger-status {
   padding: 2px 8px;
   border-radius: var(--radius-full);

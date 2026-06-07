@@ -42,6 +42,7 @@ export interface Pipeline {
 
 export interface PipelineStage {
   id: string
+  slug: string
   name: string
   status: BuildStatus
   startedAt?: number
@@ -52,6 +53,7 @@ export interface PipelineStage {
 
 export interface PipelineJob {
   id: string
+  slug: string
   name: string
   status: BuildStatus
   startedAt?: number

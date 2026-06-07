@@ -10,5 +10,5 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   onNavigate: (callback) => electron.ipcRenderer.on("navigate", (_event, route) => callback(route)),
   onQuickBuild: (callback) => electron.ipcRenderer.on("quick-build", (_event, data) => callback(data)),
   updateTrayProjects: (projects) => electron.ipcRenderer.send("update-tray-projects", projects),
-  downloadFile: (url, filename) => electron.ipcRenderer.send("download-file", url, filename)
+  downloadFile: (url, filename) => electron.ipcRenderer.invoke("download-file", url, filename)
 });

@@ -16,7 +16,7 @@ interface AppState {
   triggerRecords: LocalTriggerRecord[]
   downloadRecords: DownloadRecord[]
   settings: AppSettings
-  currentView: 'projects' | 'pipeline-detail' | 'approvals' | 'notifications' | 'settings'
+  currentView: 'projects' | 'pipeline-detail' | 'approvals' | 'notifications' | 'settings' | 'downloads'
   isLoading: boolean
   error: string | null
   buildLogs: BuildLogLine[]
@@ -333,6 +333,11 @@ export const useAppStore = create<AppState>()(
       fetchNotifications: async () => {
         set({ isLoading: true, error: null })
         try {
+          const { notifications: existingNotifications } = get()
+          if (existingNotifications && existingNotifications.length > 0) {
+            set({ isLoading: false })
+            return
+          }
           const notifications = await ciApi.getNotifications()
           set({ notifications, isLoading: false })
         } catch (error) {
@@ -399,6 +404,10 @@ export const useAppStore = create<AppState>()(
 
       fetchTriggerRecords: async () => {
         try {
+          const { triggerRecords: existingRecords } = get()
+          if (existingRecords && existingRecords.length > 0) {
+            return
+          }
           const records = await ciApi.getLocalTriggerRecords()
           set({ triggerRecords: records })
         } catch (error) {
@@ -474,27 +483,48 @@ export const useAppStore = create<AppState>()(
           return false
         }
         
-        if (window.electronAPI && artifact.downloadUrl) {
-          window.electronAPI.downloadFile(artifact.downloadUrl, artifact.name)
-        }
-        
-        setTimeout(() => {
+        try {
+          let success = false
+          let errorMsg = '下载失败'
+          
+          if (window.electronAPI && artifact.downloadUrl) {
+            const result = await window.electronAPI.downloadFile(artifact.downloadUrl, artifact.name)
+            success = result?.success ?? false
+            if (!success && result?.error) {
+              errorMsg = result.error
+            }
+          } else {
+            const newWindow = window.open(artifact.downloadUrl, '_blank')
+            success = newWindow !== null
+            if (!success) {
+              errorMsg = '无法打开下载链接，请检查浏览器设置'
+            }
+          }
+          
           const { downloadRecords: currentRecords } = get()
           const updated = currentRecords.map(r => {
             if (r.id === newRecord.id) {
-              const success = Math.random() > 0.2
               return {
                 ...r,
                 status: success ? 'success' as const : 'failed' as const,
-                errorMessage: success ? undefined : '下载失败，请重试'
+                errorMessage: success ? undefined : errorMsg
               }
             }
             return r
           })
           set({ downloadRecords: updated })
-        }, 1500)
-        
-        return true
+          
+          return success
+        } catch (error) {
+          const { downloadRecords: currentRecords } = get()
+          const updated = currentRecords.map(r => 
+            r.id === newRecord.id 
+              ? { ...r, status: 'failed' as const, errorMessage: String(error) }
+              : r
+          )
+          set({ downloadRecords: updated })
+          return false
+        }
       },
 
       retryDownload: async (recordId) => {
@@ -520,27 +550,48 @@ export const useAppStore = create<AppState>()(
         )
         set({ downloadRecords: updated })
         
-        if (window.electronAPI && record.downloadUrl) {
-          window.electronAPI.downloadFile(record.downloadUrl, record.artifactName)
-        }
-        
-        setTimeout(() => {
+        try {
+          let success = false
+          let errorMsg = '下载失败'
+          
+          if (window.electronAPI && record.downloadUrl) {
+            const result = await window.electronAPI.downloadFile(record.downloadUrl, record.artifactName)
+            success = result?.success ?? false
+            if (!success && result?.error) {
+              errorMsg = result.error
+            }
+          } else {
+            const newWindow = window.open(record.downloadUrl, '_blank')
+            success = newWindow !== null
+            if (!success) {
+              errorMsg = '无法打开下载链接，请检查浏览器设置'
+            }
+          }
+          
           const { downloadRecords: currentRecords } = get()
           const finalUpdated = currentRecords.map(r => {
             if (r.id === recordId) {
-              const success = Math.random() > 0.2
               return {
                 ...r,
                 status: success ? 'success' as const : 'failed' as const,
-                errorMessage: success ? undefined : '下载失败，请重试'
+                errorMessage: success ? undefined : errorMsg
               }
             }
             return r
           })
           set({ downloadRecords: finalUpdated })
-        }, 1500)
-        
-        return true
+          
+          return success
+        } catch (error) {
+          const { downloadRecords: currentRecords } = get()
+          const finalUpdated = currentRecords.map(r => 
+            r.id === recordId 
+              ? { ...r, status: 'failed' as const, errorMessage: String(error) }
+              : r
+          )
+          set({ downloadRecords: finalUpdated })
+          return false
+        }
       },
 
       updateDownloadRecord: (recordId, updates) => {

@@ -167,6 +167,11 @@ ipcMain.on('update-tray-projects', (_event, projects) => {
   updateTrayMenu()
 })
 
-ipcMain.on('download-file', (_event, url, filename) => {
-  shell.openExternal(url)
+ipcMain.handle('download-file', async (_event, url, _filename) => {
+  try {
+    await shell.openExternal(url)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
 })

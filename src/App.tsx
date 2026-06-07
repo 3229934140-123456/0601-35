@@ -7,6 +7,7 @@ import PipelineDetail from './components/PipelineDetail'
 import ApprovalsPage from './components/ApprovalsPage'
 import NotificationsPage from './components/NotificationsPage'
 import SettingsPage from './components/SettingsPage'
+import DownloadsPage from './components/DownloadsPage'
 import './styles/app.css'
 
 declare global {
@@ -17,7 +18,7 @@ declare global {
       updateTrayProjects: (projects: Array<{ id: string; name: string; defaultBranch: string }>) => void
       showNotification: (title: string, body: string) => void
       openExternal: (url: string) => void
-      downloadFile: (url: string, filename?: string) => void
+      downloadFile: (url: string, filename?: string) => Promise<{ success: boolean; error?: string }>
       copyToClipboard: (text: string) => void
     }
   }
@@ -94,6 +95,8 @@ export default function App() {
         return <NotificationsPage />
       case 'settings':
         return <SettingsPage />
+      case 'downloads':
+        return <DownloadsPage />
       default:
         return <ProjectList />
     }

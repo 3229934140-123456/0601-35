@@ -110,6 +110,11 @@
   font-weight: 500;
 }
 
+.notification-platform {
+  font-size: 11px;
+  color: var(--accent-color);
+}
+
 .notification-time {
   font-size: 11px;
 }

@@ -44,9 +44,9 @@ export const ciApi = {
         timestamp: now
       },
       stages: [
-        { id: 's1', name: '构建', status: 'pending', jobs: [{ id: 'j1', name: 'build', status: 'pending' }] },
-        { id: 's2', name: '测试', status: 'pending', jobs: [{ id: 'j2', name: 'test', status: 'pending' }] },
-        { id: 's3', name: '部署', status: 'pending', jobs: [{ id: 'j3', name: 'deploy', status: 'pending' }] }
+        { id: 's1', slug: 'build', name: '构建', status: 'pending', jobs: [{ id: 'j1', slug: 'build', name: 'build', status: 'pending' }] },
+        { id: 's2', slug: 'test', name: '测试', status: 'pending', jobs: [{ id: 'j2', slug: 'test', name: 'test', status: 'pending' }] },
+        { id: 's3', slug: 'deploy', name: '部署', status: 'pending', jobs: [{ id: 'j3', slug: 'deploy', name: 'deploy', status: 'pending' }] }
       ],
       startedAt: now,
       triggeredBy: '当前用户',

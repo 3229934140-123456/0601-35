@@ -144,6 +144,11 @@ electron.ipcMain.on("update-tray-projects", (_event, projects) => {
   projectList = projects;
   updateTrayMenu();
 });
-electron.ipcMain.on("download-file", (_event, url, filename) => {
-  electron.shell.openExternal(url);
+electron.ipcMain.handle("download-file", async (_event, url, _filename) => {
+  try {
+    await electron.shell.openExternal(url);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
 });

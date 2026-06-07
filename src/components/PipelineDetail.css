@@ -93,6 +93,17 @@
   color: var(--text-tertiary);
 }
 
+.meta-divider {
+  color: var(--border-color);
+  margin: 0 2px;
+}
+
+.detail-repo {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 .detail-actions {
   display: flex;
   gap: 8px;

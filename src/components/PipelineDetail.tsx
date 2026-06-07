@@ -10,6 +10,7 @@ export default function PipelineDetail() {
     pipelines, 
     buildLogs,
     downloadRecords,
+    projects,
     logSearchKeyword,
     setLogSearchKeyword,
     setSelectedPipeline,
@@ -63,10 +64,18 @@ export default function PipelineDetail() {
   const statusColor = getStatusColor(pipeline.status)
   const canCancel = pipeline.status === 'running' || pipeline.status === 'pending'
 
+  const currentProject = projects.find(p => p.id === pipeline.projectId)
+
   const filteredLogs = useMemo(() => {
     if (!activeStage) return buildLogs
     return buildLogs.filter(log => log.stage === activeStage)
   }, [buildLogs, activeStage])
+
+  const activeStageName = useMemo(() => {
+    if (!activeStage) return ''
+    const stage = pipeline.stages.find(s => s.slug === activeStage)
+    return stage?.name || activeStage
+  }, [activeStage, pipeline.stages])
 
   const matchedIndices = useMemo(() => {
     if (!logSearchKeyword) return []
@@ -112,11 +121,11 @@ export default function PipelineDetail() {
     )
   }
 
-  const handleStageClick = (stageId: string) => {
-    if (activeStage === stageId) {
+  const handleStageClick = (stageSlug: string) => {
+    if (activeStage === stageSlug) {
       setActiveStage(null)
     } else {
-      setActiveStage(stageId)
+      setActiveStage(stageSlug)
       setActiveJob(null)
     }
   }
@@ -195,6 +204,17 @@ export default function PipelineDetail() {
               {pipeline.triggerType === 'schedule' && '⏰ 定时触发'}
               {pipeline.triggerType === 'merge_request' && '🔀 MR触发'}
             </span>
+            {currentProject && (
+              <>
+                <span className="meta-divider">|</span>
+                <span title={currentProject.repoUrl}>
+                  🏭 {currentProject.ciPlatform.toUpperCase()}
+                </span>
+                <span className="detail-repo" title={currentProject.repoUrl}>
+                  📦 {truncateText(currentProject.repoUrl, 40)}
+                </span>
+              </>
+            )}
           </div>
         </div>
         <div className="detail-actions">
@@ -241,8 +261,8 @@ export default function PipelineDetail() {
                 )}
               </div>
               <div 
-                className={`stage-card stage-card-${stage.status} ${activeStage === stage.id ? 'active' : ''}`}
-                onClick={() => handleStageClick(stage.id)}
+                className={`stage-card stage-card-${stage.status} ${activeStage === stage.slug ? 'active' : ''}`}
+                onClick={() => handleStageClick(stage.slug)}
               >
                 <div className="stage-header">
                   <span className="stage-name-large">{stage.name}</span>
@@ -301,7 +321,7 @@ export default function PipelineDetail() {
             <h3 className="section-title">构建日志</h3>
             {activeStage && (
               <span className="log-filter-badge">
-                阶段: {pipeline.stages.find(s => s.id === activeStage)?.name}
+                阶段: {activeStageName}
                 <button className="log-filter-clear" onClick={() => setActiveStage(null)}>✕</button>
               </span>
             )}
