@@ -82,6 +82,43 @@ export default function ProjectList() {
 
   const canAddProject = newProject.name.trim() && newProject.repoUrl.trim() && newProject.defaultBranch.trim()
 
+  const pipelineStats = useMemo(() => {
+    if (!pipelines || pipelines.length === 0) {
+      return {
+        total: 0,
+        successCount: 0,
+        failedCount: 0,
+        runningCount: 0,
+        pendingCount: 0,
+        successRate: 0,
+        avgDuration: 0
+      }
+    }
+
+    const successCount = pipelines.filter(p => p.status === 'success').length
+    const failedCount = pipelines.filter(p => p.status === 'failed').length
+    const runningCount = pipelines.filter(p => p.status === 'running').length
+    const pendingCount = pipelines.filter(p => p.status === 'pending').length
+    const finishedCount = successCount + failedCount
+    
+    const successRate = finishedCount > 0 ? Math.round((successCount / finishedCount) * 100) : 0
+    
+    const durations = pipelines.filter(p => p.duration).map(p => p.duration!)
+    const avgDuration = durations.length > 0 
+      ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+      : 0
+
+    return {
+      total: pipelines.length,
+      successCount,
+      failedCount,
+      runningCount,
+      pendingCount,
+      successRate,
+      avgDuration
+    }
+  }, [pipelines])
+
   return (
     <div className="project-list-page">
       <div className="projects-sidebar">
@@ -192,6 +229,34 @@ export default function ProjectList() {
             </button>
           </div>
         </div>
+
+        {selectedProject && pipelines.length > 0 && (
+          <div className="pipeline-overview">
+            <h3 className="section-title">构建概览</h3>
+            <div className="stat-grid">
+              <div className="stat-card">
+                <div className="stat-label">成功率</div>
+                <div className="stat-value success">{pipelineStats.successRate}%</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-label">平均耗时</div>
+                <div className="stat-value">{pipelineStats.avgDuration > 0 ? formatDuration(pipelineStats.avgDuration) : '--'}</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-label">失败次数</div>
+                <div className="stat-value failed">{pipelineStats.failedCount}</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-label">运行 / 排队中</div>
+                <div className="stat-value">
+                  <span className="running">{pipelineStats.runningCount}</span>
+                  <span style={{ color: 'var(--text-tertiary)' }}> / </span>
+                  <span className="pending">{pipelineStats.pendingCount}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="pipelines-list">
           {isLoading ? (

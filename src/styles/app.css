@@ -424,3 +424,64 @@ textarea.input {
   min-height: 80px;
   font-family: inherit;
 }
+
+.text-sm {
+  font-size: 12px;
+}
+
+.artifact-error {
+  font-size: 12px;
+  color: var(--error-color);
+  margin-top: 4px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.stat-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.stat-card .stat-label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+.stat-card .stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stat-card .stat-value.success {
+  color: var(--success-color);
+}
+
+.stat-card .stat-value.failed {
+  color: var(--error-color);
+}
+
+.stat-card .stat-value.running {
+  color: var(--running-color);
+}
+
+.stat-card .stat-value.pending {
+  color: var(--pending-color);
+}
+
+.log-highlight {
+  background: rgba(255, 215, 0, 0.3);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.log-highlight.active {
+  background: rgba(255, 215, 0, 0.6);
+}

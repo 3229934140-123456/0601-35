@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { formatTime, formatDuration, formatFileSize, getStatusColor, truncateText } from '../utils'
 import type { Artifact } from '../types'
@@ -9,6 +9,7 @@ export default function PipelineDetail() {
     selectedPipelineId, 
     pipelines, 
     buildLogs,
+    downloadRecords,
     logSearchKeyword,
     setLogSearchKeyword,
     setSelectedPipeline,
@@ -18,15 +19,18 @@ export default function PipelineDetail() {
     copyBuildLink,
     triggerBuild,
     cancelBuild,
-    downloadArtifact,
+    startDownload,
+    retryDownload,
     isLoading
   } = useAppStore()
 
   const [activeJob, setActiveJob] = useState<string | null>(null)
+  const [activeStage, setActiveStage] = useState<string | null>(null)
   const [showArtifacts, setShowArtifacts] = useState(true)
   const [searchInput, setSearchInput] = useState('')
-  const [downloadingArtifacts, setDownloadingArtifacts] = useState<Record<string, 'downloading' | 'success' | 'failed' | null>>({})
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0)
   const logContainerRef = useRef<HTMLDivElement>(null)
+  const logLineRefs = useRef<Array<HTMLDivElement | null>>([])
 
   const pipeline = pipelines.find(p => p.id === selectedPipelineId)
 
@@ -59,6 +63,64 @@ export default function PipelineDetail() {
   const statusColor = getStatusColor(pipeline.status)
   const canCancel = pipeline.status === 'running' || pipeline.status === 'pending'
 
+  const filteredLogs = useMemo(() => {
+    if (!activeStage) return buildLogs
+    return buildLogs.filter(log => log.stage === activeStage)
+  }, [buildLogs, activeStage])
+
+  const matchedIndices = useMemo(() => {
+    if (!logSearchKeyword) return []
+    const keyword = logSearchKeyword.toLowerCase()
+    return filteredLogs
+      .map((log, idx) => log.message.toLowerCase().includes(keyword) ? idx : -1)
+      .filter(idx => idx !== -1)
+  }, [filteredLogs, logSearchKeyword])
+
+  useEffect(() => {
+    setCurrentMatchIndex(0)
+  }, [logSearchKeyword, activeStage])
+
+  useEffect(() => {
+    if (matchedIndices.length > 0 && currentMatchIndex >= 0 && logLineRefs.current[matchedIndices[currentMatchIndex]]) {
+      logLineRefs.current[matchedIndices[currentMatchIndex]]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      })
+    }
+  }, [currentMatchIndex, matchedIndices])
+
+  const highlightText = (text: string, keyword: string) => {
+    if (!keyword) return text
+    const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+    const parts = text.split(regex)
+    return parts.map((part, idx) => 
+      regex.test(part) ? <span key={idx} className="log-highlight">{part}</span> : part
+    )
+  }
+
+  const goToPrevMatch = () => {
+    if (matchedIndices.length === 0) return
+    setCurrentMatchIndex(prev => 
+      prev > 0 ? prev - 1 : matchedIndices.length - 1
+    )
+  }
+
+  const goToNextMatch = () => {
+    if (matchedIndices.length === 0) return
+    setCurrentMatchIndex(prev => 
+      prev < matchedIndices.length - 1 ? prev + 1 : 0
+    )
+  }
+
+  const handleStageClick = (stageId: string) => {
+    if (activeStage === stageId) {
+      setActiveStage(null)
+    } else {
+      setActiveStage(stageId)
+      setActiveJob(null)
+    }
+  }
+
   const handleSearch = () => {
     if (selectedPipelineId) {
       searchBuildLogs(selectedPipelineId, searchInput)
@@ -83,32 +145,17 @@ export default function PipelineDetail() {
     }
   }
 
-  const handleDownloadArtifact = async (artifact: Artifact) => {
-    const artifactId = artifact.id
-    setDownloadingArtifacts(prev => ({ ...prev, [artifactId]: 'downloading' }))
-    
-    try {
-      if (window.electronAPI && artifact.downloadUrl) {
-        window.electronAPI.downloadFile(artifact.downloadUrl, artifact.name)
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const success = Math.random() > 0.3
-      if (success) {
-        setDownloadingArtifacts(prev => ({ ...prev, [artifactId]: 'success' }))
-        setTimeout(() => {
-          setDownloadingArtifacts(prev => ({ ...prev, [artifactId]: null }))
-        }, 3000)
-      } else {
-        throw new Error('下载失败')
-      }
-    } catch (error) {
-      setDownloadingArtifacts(prev => ({ ...prev, [artifactId]: 'failed' }))
-      setTimeout(() => {
-        setDownloadingArtifacts(prev => ({ ...prev, [artifactId]: null }))
-      }, 3000)
-    }
+  const getArtifactDownloadRecord = (artifactId: string) => {
+    const recordsForArtifact = downloadRecords.filter(r => r.artifactId === artifactId)
+    return recordsForArtifact.sort((a, b) => b.downloadedAt - a.downloadedAt)[0] || null
+  }
+
+  const handleDownloadArtifact = (artifact: Artifact) => {
+    startDownload(artifact, pipeline)
+  }
+
+  const handleRetryDownload = (recordId: string) => {
+    retryDownload(recordId)
   }
 
   const totalDuration = pipeline.stages.reduce((acc, stage) => acc + (stage.duration || 0), 0)
@@ -193,7 +240,10 @@ export default function PipelineDetail() {
                   />
                 )}
               </div>
-              <div className={`stage-card stage-card-${stage.status}`}>
+              <div 
+                className={`stage-card stage-card-${stage.status} ${activeStage === stage.id ? 'active' : ''}`}
+                onClick={() => handleStageClick(stage.id)}
+              >
                 <div className="stage-header">
                   <span className="stage-name-large">{stage.name}</span>
                   <span className={`stage-status-badge badge-${stage.status}`}>
@@ -247,7 +297,15 @@ export default function PipelineDetail() {
 
       <div className="logs-section">
         <div className="logs-header">
-          <h3 className="section-title">构建日志</h3>
+          <div className="logs-header-left">
+            <h3 className="section-title">构建日志</h3>
+            {activeStage && (
+              <span className="log-filter-badge">
+                阶段: {pipeline.stages.find(s => s.id === activeStage)?.name}
+                <button className="log-filter-clear" onClick={() => setActiveStage(null)}>✕</button>
+              </span>
+            )}
+          </div>
           <div className="logs-search">
             <input
               type="text"
@@ -260,6 +318,27 @@ export default function PipelineDetail() {
             <button className="btn btn-secondary btn-sm" onClick={handleSearch}>
               🔍 搜索
             </button>
+            {logSearchKeyword && matchedIndices.length > 0 && (
+              <div className="log-match-nav">
+                <span className="log-match-count">
+                  {currentMatchIndex + 1} / {matchedIndices.length}
+                </span>
+                <button 
+                  className="btn btn-ghost btn-sm log-nav-btn" 
+                  onClick={goToPrevMatch}
+                  title="上一个"
+                >
+                  ↑
+                </button>
+                <button 
+                  className="btn btn-ghost btn-sm log-nav-btn" 
+                  onClick={goToNextMatch}
+                  title="下一个"
+                >
+                  ↓
+                </button>
+              </div>
+            )}
           </div>
         </div>
         <div className="logs-container" ref={logContainerRef}>
@@ -268,25 +347,33 @@ export default function PipelineDetail() {
               <div className="loading-spinner" />
               <span>加载日志中...</span>
             </div>
-          ) : buildLogs.length === 0 ? (
-            <div className="logs-empty">暂无日志</div>
+          ) : filteredLogs.length === 0 ? (
+            <div className="logs-empty">
+              {activeStage ? '该阶段暂无日志' : '暂无日志'}
+            </div>
           ) : (
             <div className="logs-content">
-              {buildLogs.map((log, index) => (
-                <div 
-                  key={index} 
-                  className={`log-line log-${log.level}`}
-                >
-                  <span className="log-time">
-                    {log.timestamp ? formatTime(log.timestamp, 'HH:mm:ss') : ''}
-                  </span>
-                  <span className={`log-level level-${log.level}`}>
-                    {log.level.toUpperCase()}
-                  </span>
-                  <span className="log-stage">[{log.stage}]</span>
-                  <span className="log-message">{log.message}</span>
-                </div>
-              ))}
+              {filteredLogs.map((log, index) => {
+                const isActiveMatch = matchedIndices[currentMatchIndex] === index
+                return (
+                  <div 
+                    key={index} 
+                    ref={el => logLineRefs.current[index] = el}
+                    className={`log-line log-${log.level} ${isActiveMatch ? 'log-line-active' : ''}`}
+                  >
+                    <span className="log-time">
+                      {log.timestamp ? formatTime(log.timestamp, 'HH:mm:ss') : ''}
+                    </span>
+                    <span className={`log-level level-${log.level}`}>
+                      {log.level.toUpperCase()}
+                    </span>
+                    <span className="log-stage">[{log.stage}]</span>
+                    <span className="log-message">
+                      {highlightText(log.message, logSearchKeyword)}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
@@ -302,33 +389,52 @@ export default function PipelineDetail() {
           </div>
           {showArtifacts && (
             <div className="artifacts-list">
-              {pipeline.artifacts.map(artifact => (
-                <div key={artifact.id} className="artifact-item card">
-                  <div className="artifact-icon">📦</div>
-                  <div className="artifact-info">
-                    <div className="artifact-name">{artifact.name}</div>
-                    <div className="artifact-meta">
-                      <span>{formatFileSize(artifact.size)}</span>
-                      <span>·</span>
-                      <span>{formatTime(artifact.createdAt)}</span>
+              {pipeline.artifacts.map(artifact => {
+                const record = getArtifactDownloadRecord(artifact.id)
+                const hasValidUrl = artifact.downloadUrl && artifact.downloadUrl !== '#' && artifact.downloadUrl !== ''
+                
+                return (
+                  <div key={artifact.id} className="artifact-item card">
+                    <div className="artifact-icon">📦</div>
+                    <div className="artifact-info">
+                      <div className="artifact-name">{artifact.name}</div>
+                      <div className="artifact-meta">
+                        <span>{formatFileSize(artifact.size)}</span>
+                        <span>·</span>
+                        <span>{formatTime(artifact.createdAt)}</span>
+                      </div>
+                      {record && record.status === 'failed' && record.errorMessage && (
+                        <div className="artifact-error">{record.errorMessage}</div>
+                      )}
                     </div>
+                    {!hasValidUrl ? (
+                      <span className="text-muted text-sm">链接不可用</span>
+                    ) : record?.status === 'downloading' ? (
+                      <button className="btn btn-sm btn-secondary" disabled>
+                        ⏳ 下载中...
+                      </button>
+                    ) : record?.status === 'success' ? (
+                      <button className="btn btn-sm btn-success" disabled>
+                        ✓ 下载成功
+                      </button>
+                    ) : record?.status === 'failed' ? (
+                      <button 
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleRetryDownload(record.id)}
+                      >
+                        ↻ 重试
+                      </button>
+                    ) : (
+                      <button 
+                        className="btn btn-sm btn-primary"
+                        onClick={() => handleDownloadArtifact(artifact)}
+                      >
+                        ⬇ 下载
+                      </button>
+                    )}
                   </div>
-                  <button 
-                    className={`btn btn-sm ${
-                      downloadingArtifacts[artifact.id] === 'failed' ? 'btn-danger' :
-                      downloadingArtifacts[artifact.id] === 'success' ? 'btn-success' :
-                      'btn-primary'
-                    }`}
-                    onClick={() => handleDownloadArtifact(artifact)}
-                    disabled={downloadingArtifacts[artifact.id] === 'downloading'}
-                  >
-                    {downloadingArtifacts[artifact.id] === 'downloading' && '⏳ 下载中...'}
-                    {downloadingArtifacts[artifact.id] === 'success' && '✓ 下载成功'}
-                    {downloadingArtifacts[artifact.id] === 'failed' && '✗ 下载失败'}
-                    {!downloadingArtifacts[artifact.id] && '⬇ 下载'}
-                  </button>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

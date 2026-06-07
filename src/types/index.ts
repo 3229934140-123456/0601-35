@@ -143,3 +143,17 @@ export interface LocalTriggerRecord {
   status: BuildStatus
   pipelineId: string
 }
+
+export interface DownloadRecord {
+  id: string
+  artifactId: string
+  artifactName: string
+  projectId: string
+  projectName: string
+  pipelineId: string
+  downloadUrl: string
+  size: number
+  status: 'downloading' | 'success' | 'failed'
+  downloadedAt: number
+  errorMessage?: string
+}

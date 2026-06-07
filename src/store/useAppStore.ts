@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Project, Pipeline, ApprovalItem, NotificationItem, UserAccount, AppSettings, LocalTriggerRecord, BuildLogLine } from '../types'
+import type { Project, Pipeline, ApprovalItem, NotificationItem, UserAccount, AppSettings, LocalTriggerRecord, BuildLogLine, DownloadRecord, Artifact } from '../types'
 import { ciApi } from '../api'
 
 interface AppState {
@@ -14,6 +14,7 @@ interface AppState {
   notifications: NotificationItem[]
   accounts: UserAccount[]
   triggerRecords: LocalTriggerRecord[]
+  downloadRecords: DownloadRecord[]
   settings: AppSettings
   currentView: 'projects' | 'pipeline-detail' | 'approvals' | 'notifications' | 'settings'
   isLoading: boolean
@@ -49,6 +50,9 @@ interface AppState {
   fetchBuildLogs: (pipelineId: string, jobId?: string) => Promise<void>
   searchBuildLogs: (pipelineId: string, keyword: string) => Promise<void>
   downloadArtifact: (artifactId: string) => Promise<boolean>
+  startDownload: (artifact: Artifact, pipeline: Pipeline) => Promise<boolean>
+  retryDownload: (recordId: string) => Promise<boolean>
+  updateDownloadRecord: (recordId: string, updates: Partial<DownloadRecord>) => void
 
   updateSettings: (settings: Partial<AppSettings>) => void
   copyBuildLink: (pipelineId: string) => void
@@ -85,6 +89,7 @@ export const useAppStore = create<AppState>()(
       notifications: [],
       accounts: [],
       triggerRecords: [],
+      downloadRecords: [],
       settings: defaultSettings,
       currentView: 'projects',
       isLoading: false,
@@ -212,20 +217,43 @@ export const useAppStore = create<AppState>()(
       triggerBuild: async (projectId, branch) => {
         try {
           const pipeline = await ciApi.triggerBuild(projectId, branch)
-          const { pipelines, triggerRecords } = get()
-          set({ pipelines: [pipeline, ...pipelines] })
+          const { pipelines, triggerRecords, projects, notifications } = get()
+          
+          const project = projects.find(p => p.id === projectId)
+          const pipelineWithProjectName = project 
+            ? { ...pipeline, projectName: project.name }
+            : pipeline
+          
+          set({ pipelines: [pipelineWithProjectName, ...pipelines] })
           
           const newRecord: LocalTriggerRecord = {
             id: `trig-${Date.now()}`,
             projectId,
-            projectName: pipeline.projectName,
+            projectName: project?.name || pipeline.projectName,
             branch,
             triggeredAt: Date.now(),
             status: 'pending',
             pipelineId: pipeline.id
           }
           set({ triggerRecords: [newRecord, ...triggerRecords] })
-          return pipeline
+          
+          if (project) {
+            const newNotif = {
+              id: `notif-${Date.now()}`,
+              type: 'build_success' as const,
+              title: `构建已触发 - ${project.name}`,
+              message: `${branch} 分支手动触发构建`,
+              projectId,
+              projectName: project.name,
+              pipelineId: pipeline.id,
+              timestamp: Date.now(),
+              read: false,
+              sound: false
+            }
+            set({ notifications: [newNotif, ...notifications] })
+          }
+          
+          return pipelineWithProjectName
         } catch (error) {
           set({ error: '触发构建失败' })
           return null
@@ -420,6 +448,109 @@ export const useAppStore = create<AppState>()(
         }
       },
 
+      startDownload: async (artifact, pipeline) => {
+        const { downloadRecords } = get()
+        const now = Date.now()
+        
+        const isValidUrl = artifact.downloadUrl && artifact.downloadUrl !== '#' && artifact.downloadUrl !== ''
+        
+        const newRecord: DownloadRecord = {
+          id: `dl-${now}`,
+          artifactId: artifact.id,
+          artifactName: artifact.name,
+          projectId: pipeline.projectId,
+          projectName: pipeline.projectName,
+          pipelineId: pipeline.id,
+          downloadUrl: artifact.downloadUrl,
+          size: artifact.size,
+          status: isValidUrl ? 'downloading' : 'failed',
+          downloadedAt: now,
+          errorMessage: isValidUrl ? undefined : '下载链接不可用'
+        }
+        
+        set({ downloadRecords: [newRecord, ...downloadRecords] })
+        
+        if (!isValidUrl) {
+          return false
+        }
+        
+        if (window.electronAPI && artifact.downloadUrl) {
+          window.electronAPI.downloadFile(artifact.downloadUrl, artifact.name)
+        }
+        
+        setTimeout(() => {
+          const { downloadRecords: currentRecords } = get()
+          const updated = currentRecords.map(r => {
+            if (r.id === newRecord.id) {
+              const success = Math.random() > 0.2
+              return {
+                ...r,
+                status: success ? 'success' as const : 'failed' as const,
+                errorMessage: success ? undefined : '下载失败，请重试'
+              }
+            }
+            return r
+          })
+          set({ downloadRecords: updated })
+        }, 1500)
+        
+        return true
+      },
+
+      retryDownload: async (recordId) => {
+        const { downloadRecords } = get()
+        const record = downloadRecords.find(r => r.id === recordId)
+        if (!record) return false
+        
+        const isValidUrl = record.downloadUrl && record.downloadUrl !== '#' && record.downloadUrl !== ''
+        if (!isValidUrl) {
+          const updated = downloadRecords.map(r => 
+            r.id === recordId 
+              ? { ...r, status: 'failed' as const, errorMessage: '下载链接不可用' } 
+              : r
+          )
+          set({ downloadRecords: updated })
+          return false
+        }
+        
+        const updated = downloadRecords.map(r => 
+          r.id === recordId 
+            ? { ...r, status: 'downloading' as const, errorMessage: undefined, downloadedAt: Date.now() } 
+            : r
+        )
+        set({ downloadRecords: updated })
+        
+        if (window.electronAPI && record.downloadUrl) {
+          window.electronAPI.downloadFile(record.downloadUrl, record.artifactName)
+        }
+        
+        setTimeout(() => {
+          const { downloadRecords: currentRecords } = get()
+          const finalUpdated = currentRecords.map(r => {
+            if (r.id === recordId) {
+              const success = Math.random() > 0.2
+              return {
+                ...r,
+                status: success ? 'success' as const : 'failed' as const,
+                errorMessage: success ? undefined : '下载失败，请重试'
+              }
+            }
+            return r
+          })
+          set({ downloadRecords: finalUpdated })
+        }, 1500)
+        
+        return true
+      },
+
+      updateDownloadRecord: (recordId, updates) => {
+        const { downloadRecords } = get()
+        const updated = downloadRecords.map(r => 
+          r.id === recordId ? { ...r, ...updates } : r
+        )
+        set({ downloadRecords: updated })
+      },
+
       updateSettings: (newSettings) => {
         const { settings } = get()
         set({ settings: { ...settings, ...newSettings } })
@@ -440,7 +571,8 @@ export const useAppStore = create<AppState>()(
         projects: state.projects,
         settings: state.settings,
         accounts: state.accounts,
-        triggerRecords: state.triggerRecords
+        triggerRecords: state.triggerRecords,
+        downloadRecords: state.downloadRecords
       })
     }
   )
